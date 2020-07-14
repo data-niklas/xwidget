@@ -54,3 +54,8 @@ y = 200
 fontsize = 22
 ```
 Will create a widget with the text "This is a test". After clicking on it, a notification with the message "Test" should be displayed.
+
+## FAQ
+- Program is stuck / won't start
+  - navigate to `/tmp/` and remove all files, which start with `xwidget` and end with some numbers
+  - please don't kill this program <3
