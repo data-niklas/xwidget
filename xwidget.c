@@ -16,8 +16,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "gesture.h"
-
 #include "xwidget.h"
 #include "helper.h"
 #include "config.h"
@@ -301,15 +299,21 @@ void parseArgs(int argc, char *argv[]){
           {"config",  no_argument,       0, 'c'},
           {"version", no_argument,       0, 'v'},
           {"print",   no_argument,       0, 'p'},
-          {"reload",  no_argument,       0, 'r'}
+          {"reload",  no_argument,       0, 'r'},
+          {"fix",  no_argument,       0, 'f'}
         };
+    int fix = 0;
     int opt_index = 0;
     while ((ch = getopt_long(argc, argv, ":hc:vrp", long_options, &opt_index)) != -1) {
         switch (ch) {
             case 'h':
                 printf ("xwidget version %s\n", "1.1");
-                printf ("usage: %s [-h | -v | -c]\n"
+                printf ("usage: %s [-h | -v | -c | -p | -r | -f]\n"
                         "\t-h Show this help\n"
+                        "\t-f Fix the temporary file and start\n"
+                        "\t-v Print the version\n"
+                        "\t-p Exit the program successfully or exit with an error, either if an instance of xwidget (with this config) was already started, or does not exist\n"
+                        "\t-r Reload the instance with the config\n"
                         "\t-c Set the config file\n", argv[0]);
                 exit (EXIT_SUCCESS);
                 break;
@@ -325,6 +329,9 @@ void parseArgs(int argc, char *argv[]){
             case 'p': //used for some unknown options
                 startmode = STARTMODE_CHECK;
                 break;
+            case 'f': //used for some unknown options
+                fix = 1;
+                break;
         }
     }
 
@@ -338,7 +345,7 @@ void parseArgs(int argc, char *argv[]){
             puts("Config file does not exist!");
             exit(EXIT_FAILURE);
         }
-        if (access( fifo_path, F_OK ) != -1) {
+        if (access( fifo_path, F_OK ) != -1 && !fix) {
             fifo_file = open(fifo_path, O_WRONLY);
             write(fifo_file, "f", sizeof("f"));
             close(fifo_file);
