@@ -16,7 +16,7 @@ simple xorg widgets
 
 - Example config can be seen in the screenshot
 
-![](/home/niklas/Programming/C(++)/xwidget/assets/Example_1.png)
+![](assets/Example_1.png)
 
 ### Example 2
 
