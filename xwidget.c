@@ -66,6 +66,8 @@ void *initWidget(void* param){
 
         int width = 0;
         int height = 0;
+        int areawidth;
+        int areaheight;
         while (fgets(buffer, 255, res)){
             start = 0;
             int len = strlen(buffer);
@@ -84,13 +86,38 @@ void *initWidget(void* param){
                 cairo_set_font_size(w->tcr, c.fontsize);
                 cairo_text_extents(w->tcr, area->text, ext);
 
-                area->c.w = ext->width + 2 * c.padding;
-                area->c.h = ext->height + 2 * c.padding;
+
+                areawidth = ext->width + 2 * c.padding;
+                areaheight = ext->height + 2 * c.padding;
+                if (areawidth > area->c.w)area->c.w = areawidth;
+                if (areaheight > area->c.h)area->c.h = areaheight;
+
+                if (area->c.x < 0){
+                    switch(area->c.x){
+                        case -1:
+                            area->c.x = (w->w - area->c.w) / 2;
+                        break;
+                        case -2:
+                            area->c.x = w->w - area->c.w;
+                        break;
+                    }
+                }
+                if (area->c.y < 0){
+                    switch(area->c.y){
+                        case -1:
+                            area->c.y = (w->h - area->c.h) / 2;
+                        break;
+                        case -2:
+                            area->c.y = w->h - area->c.h;
+                        break;
+                    }
+                }
+
                 if (area->c.x + area->c.w > width)width = area->c.x + area->c.w;
                 if (area->c.y + area->c.h > height)height = area->c.y + area->c.h;
-                c.x+=area->c.w;
+                if (c.x > -1)c.x+=area->c.w;
                 if (i == len){
-                    c.y+=w->line_height * area->c.h;
+                    if (c.y > -1)c.y+=w->line_height * area->c.h;
                     c.x = w->padding;
                 }
     
@@ -115,6 +142,12 @@ void *initWidget(void* param){
                             c.padding = 0;
                             c.fg = w->fg;
                             c.bg = w->bg;
+                            c.w = 0;
+                            c.h = 0;
+                            if (last != NULL){
+                                c.x = last->c.x + last->c.w;
+                                c.y = last->c.y;
+                            }
                             c.fontsize = w->fontsize;
                             i+=4;
                             start=i;
@@ -144,8 +177,10 @@ void *initWidget(void* param){
 
             }
         }
-        w->w = width + w->padding * 2;
-        w->h = height + w->padding * 2;
+        width += w->padding * 2;
+        height += w->padding * 2;
+        if (width > w->w)w->w = width;
+        if (height > w->h)w->h = height;
         pclose(res);
         free(ext);
 
@@ -207,6 +242,8 @@ void parseArea(char type, char* value, config_t *c) {
         case 'S': c->fontsize = atoi(value);break;
         case 'X': c->x = atoi(value);break;
         case 'Y': c->y = atoi(value);break;
+        case 'W': c->w = atoi(value);break;
+        case 'H': c->h = atoi(value);break;
     }
 }
 
@@ -252,6 +289,8 @@ void parseConfig(){
 
             if (strcmp(start, "x") == 0)current->x = atol(value);
             else if (strcmp(start, "y") == 0)current->y = atol(value);
+            else if (strcmp(start, "w") == 0)current->w = atol(value);
+            else if (strcmp(start, "h") == 0)current->h = atol(value);
             else if (strcmp(start, "bg") == 0)current->bg = hextocolor(value);
             else if (strcmp(start, "fg") == 0)current->fg = hextocolor(value);
             else if (strcmp(start, "refresh_rate") == 0)current->refresh_rate = strtoul(value,NULL,0);

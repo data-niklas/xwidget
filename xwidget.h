@@ -15,8 +15,8 @@ typedef struct color_t{
 
 
 typedef struct config_t{
-    unsigned int x;
-    unsigned int y;
+    int x;
+    int y;
     unsigned int w;
     unsigned int h;
     unsigned int padding;

@@ -44,6 +44,8 @@ simple xorg widgets
   - `command`
   - `x` position
   - `y` position
+  - `w` minimum width
+  - `h` minimum height
   - `font`
   - `fontsize`
   - `bg` background color
@@ -68,8 +70,10 @@ simple xorg widgets
 - Each area has attributes, which are inherited from the widget
   - `B` background color
   - `F` foreground color
-  - `X` x position 
-  - `Y` y position
+  - `X` x position: -1 to center; -2 to align to the right side 
+  - `Y` y position: -1 to center; -2 to align to the bottom side
+  - `W` minimum width
+  - `H` minimum height
   - `P` padding
   - `S` font size 
   - The following actions, which are triggered on the respective event:
