@@ -304,7 +304,7 @@ void parseArgs(int argc, char *argv[]){
         };
     int fix = 0;
     int opt_index = 0;
-    while ((ch = getopt_long(argc, argv, ":hc:vrp", long_options, &opt_index)) != -1) {
+    while ((ch = getopt_long(argc, argv, ":hc:vrpf", long_options, &opt_index)) != -1) {
         switch (ch) {
             case 'h':
                 printf ("xwidget version %s\n", "1.1");
@@ -336,16 +336,20 @@ void parseArgs(int argc, char *argv[]){
     }
 
 
+    
+
+
     char h[32];
     sprintf(h, "%d", hash(configfile));
     strcpy(fifo_path, "/tmp/xwidget");
     strcat(fifo_path, h);
+    if (fix)unlink(fifo_path);
     if (startmode == STARTMODE_DEFAULT){
         if (stat(configfile, &st) == -1) {
             puts("Config file does not exist!");
             exit(EXIT_FAILURE);
         }
-        if (access( fifo_path, F_OK ) != -1 && !fix) {
+        if (access( fifo_path, F_OK ) != -1) {
             fifo_file = open(fifo_path, O_WRONLY);
             write(fifo_file, "f", sizeof("f"));
             close(fifo_file);
