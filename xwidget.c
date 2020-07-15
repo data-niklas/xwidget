@@ -89,7 +89,10 @@ void *initWidget(void* param){
                 if (area->c.x + area->c.w > width)width = area->c.x + area->c.w;
                 if (area->c.y + area->c.h > height)height = area->c.y + area->c.h;
                 c.x+=area->c.w;
-                if (i == len)c.y+=w->line_height * area->c.h;
+                if (i == len){
+                    c.y+=w->line_height * area->c.h;
+                    c.x = w->padding;
+                }
     
                 start = i;
 
