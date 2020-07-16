@@ -45,7 +45,7 @@ void *initWidget(void* param){
 
         cairo_text_extents_t *ext = malloc(sizeof(cairo_text_extents_t));
 
-        char buffer[255];
+        char buffer[1024];
         int start;
         if (w->areas != NULL){
             free_area(w->areas);
@@ -68,7 +68,7 @@ void *initWidget(void* param){
         int height = 0;
         int areawidth;
         int areaheight;
-        while (fgets(buffer, 255, res)){
+        while (fgets(buffer, 1024, res)){
             start = 0;
             int len = strlen(buffer);
             int i = 0;
@@ -203,6 +203,8 @@ void *initWidget(void* param){
 
 //Render
 void renderAreas(widget_t* w){
+    cairo_text_extents_t *ext = malloc(sizeof(cairo_text_extents_t));
+
     cairo_set_source_rgba(w->cr, w->bg.r / 255., w->bg.g / 255., w->bg.b / 255., w->bg.a / 255.);
     cairo_paint (w->cr);
     area_t *a = w->areas;
@@ -214,10 +216,13 @@ void renderAreas(widget_t* w){
         cairo_set_source_rgba(w->cr, a->c.fg.r / 255, a->c.fg.g / 255, a->c.fg.b / 255, a->c.fg.a / 255);
         cairo_select_font_face(w->cr, a->c.font, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
         cairo_set_font_size(w->cr, a->c.fontsize);
-        cairo_move_to(w->cr, a->c.x + a->c.padding, a->c.y + a->c.h - a->c.padding);
+        cairo_text_extents(w->tcr, a->text, ext);
+
+        cairo_move_to(w->cr, a->c.x + (a->c.w - ext->width) / 2, a->c.y + a->c.h - (a->c.h - ext->height) / 2);
         cairo_show_text(w->cr, a->text);
         a = a->next;
     }
+    free(ext);
     cairo_surface_flush(w->surface);
     xcb_flush(conn);
 }
@@ -342,20 +347,23 @@ void parseArgs(int argc, char *argv[]){
           {"version", no_argument,       0, 'v'},
           {"print",   no_argument,       0, 'p'},
           {"reload",  no_argument,       0, 'r'},
-          {"fix",  no_argument,       0, 'f'}
+          {"fix",  no_argument,       0, 'f'},
+          {"timeout",  no_argument,       0, 't'}
         };
     int fix = 0;
     int opt_index = 0;
-    while ((ch = getopt_long(argc, argv, ":hc:vrpf", long_options, &opt_index)) != -1) {
+    int timeout = 0;
+    while ((ch = getopt_long(argc, argv, ":hc:vrpft:", long_options, &opt_index)) != -1) {
         switch (ch) {
             case 'h':
                 printf ("xwidget version %s\n", "1.1");
-                printf ("usage: %s [-h | -v | -c | -p | -r | -f]\n"
+                printf ("usage: %s [-h | -v | -c | -p | -r | -f | -t]\n"
                         "\t-h Show this help\n"
                         "\t-f Fix the temporary file and start\n"
                         "\t-v Print the version\n"
                         "\t-p Exit the program successfully or exit with an error, either if an instance of xwidget (with this config) was already started, or does not exist\n"
                         "\t-r Reload the instance with the config\n"
+                        "\t-t timeout in seconds\n"
                         "\t-c Set the config file\n", argv[0]);
                 exit (EXIT_SUCCESS);
                 break;
@@ -374,12 +382,11 @@ void parseArgs(int argc, char *argv[]){
             case 'f': //used for some unknown options
                 fix = 1;
                 break;
+            case 't': //used for some unknown options
+                timeout = atoi(optarg);
+                break;
         }
     }
-
-
-    
-
 
     char h[32];
     sprintf(h, "%d", hash(configfile));
@@ -414,6 +421,11 @@ void parseArgs(int argc, char *argv[]){
         write(fifo_file, "r", sizeof("r"));
         close(fifo_file);
         exit(0);
+    }
+
+    if (timeout != 0){
+        signal(SIGALRM, sighandle);
+        alarm(timeout);
     }
 }
 
@@ -552,6 +564,7 @@ void sighandle (int signal)
 {
     if (signal == SIGINT || signal == SIGTERM)
         exit(EXIT_SUCCESS);
+    else if (signal == SIGALRM)exit(EXIT_SUCCESS);
 }
 
 int main(int argc, char *argv[]){

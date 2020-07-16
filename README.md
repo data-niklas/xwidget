@@ -61,6 +61,7 @@ simple xorg widgets
 - `-c` / `--config` to specify the config; will default to `~/.config/xwidget/xwidget.conf`
 - `-p` / `--print`  will exit with 0, if an instance with the same config exists, 1 if an instance does not exist
 - `-r` / `--reload` reloads the instance with the specified config
+- `-t` / `--timeout` will timeout after x seconds and kill itself
 - no options        will kill the instance with the config, if it exists, else it will start (can be used to toggle the program via commandline)
 
 ## Commands
