@@ -77,6 +77,7 @@ simple xorg widgets
   - `H` minimum height
   - `P` padding
   - `S` font size 
+  - `I` sets the area type to `image`: the content now should be an URL to a .png file
   - The following actions, which are triggered on the respective event:
   - `L` mouse button 1 (left click);
   - `M` mouse button 2 (middle click)

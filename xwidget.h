@@ -15,6 +15,8 @@ typedef struct color_t{
 
 
 typedef struct config_t{
+    //Type 0: Text, 1: Image
+    char type;
     int x;
     int y;
     unsigned int w;

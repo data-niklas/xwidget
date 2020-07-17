@@ -82,13 +82,20 @@ void *initWidget(void* param){
                 if (i == len && buffer[i - 1] == '\n')nl = 1;
                 strncpy(area->text, &buffer[start], i - start - nl);
                 area->text[i - start - nl] = '\0';
-                cairo_select_font_face(w->tcr,area->c.font, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-                cairo_set_font_size(w->tcr, c.fontsize);
-                cairo_text_extents(w->tcr, area->text, ext);
 
-
-                areawidth = ext->width + 2 * c.padding;
-                areaheight = ext->height + 2 * c.padding;
+                if (area->c.type == 0){
+                    cairo_select_font_face(w->tcr,area->c.font, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+                    cairo_set_font_size(w->tcr, c.fontsize);
+                    cairo_text_extents(w->tcr, area->text, ext);
+                    areawidth = ext->width + 2 * c.padding;
+                    areaheight = ext->height + 2 * c.padding;
+                }
+                else if (area->c.type == 1){
+                    cairo_surface_t *image = cairo_image_surface_create_from_png(area->text);
+                    areawidth = cairo_image_surface_get_width(image) + 2 * c.padding;
+                    areaheight = cairo_image_surface_get_height(image) + 2 * c.padding;
+                    cairo_surface_destroy(image);
+                }
                 if (areawidth > area->c.w)area->c.w = areawidth;
                 if (areaheight > area->c.h)area->c.h = areaheight;
 
@@ -140,6 +147,7 @@ void *initWidget(void* param){
                             c.action_l[0] = '\0';
                             c.action_r[0] = '\0';
                             c.padding = 0;
+                            c.type = 0;
                             c.fg = w->fg;
                             c.bg = w->bg;
                             c.w = 0;
@@ -213,13 +221,30 @@ void renderAreas(widget_t* w){
         cairo_rectangle(w->cr, a->c.x, a->c.y, a->c.w, a->c.h);
         cairo_fill(w->cr);
     
-        cairo_set_source_rgba(w->cr, a->c.fg.r / 255, a->c.fg.g / 255, a->c.fg.b / 255, a->c.fg.a / 255);
-        cairo_select_font_face(w->cr, a->c.font, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-        cairo_set_font_size(w->cr, a->c.fontsize);
-        cairo_text_extents(w->tcr, a->text, ext);
+        if (a->c.type == 0){
+            cairo_set_source_rgba(w->cr, a->c.fg.r / 255, a->c.fg.g / 255, a->c.fg.b / 255, a->c.fg.a / 255);
+            cairo_select_font_face(w->cr, a->c.font, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+            cairo_set_font_size(w->cr, a->c.fontsize);
+            cairo_text_extents(w->tcr, a->text, ext);
 
-        cairo_move_to(w->cr, a->c.x + (a->c.w - ext->width) / 2, a->c.y + a->c.h - (a->c.h - ext->height) / 2);
-        cairo_show_text(w->cr, a->text);
+            cairo_move_to(w->cr, a->c.x + (a->c.w - ext->width) / 2, a->c.y + a->c.h - (a->c.h - ext->height) / 2);
+            cairo_show_text(w->cr, a->text);
+        }
+        else if (a->c.type == 1){
+            cairo_surface_t *image = cairo_image_surface_create_from_png(a->text);
+            int iw = cairo_image_surface_get_width(image);
+            int ih = cairo_image_surface_get_height(image);
+            int ix = a->c.x + (a->c.w - iw) / 2;
+            int iy = a->c.y + (a->c.h - ih) / 2;
+        
+            //cairo_clip (w->cr);
+            //cairo_new_path (w->cr);
+            
+            cairo_set_source_surface(w->cr, image, ix, iy);
+            cairo_rectangle(w->cr, ix, iy, iw, ih);
+            cairo_fill(w->cr);
+            cairo_surface_destroy(image);
+        }
         a = a->next;
     }
     free(ext);
@@ -249,6 +274,7 @@ void parseArea(char type, char* value, config_t *c) {
         case 'Y': c->y = atoi(value);break;
         case 'W': c->w = atoi(value);break;
         case 'H': c->h = atoi(value);break;
+        case 'I': c->type = 1;break;
     }
 }
 

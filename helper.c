@@ -106,13 +106,13 @@ widget_t *create_widget(){
     res->fg = white_color;
     strcpy(res->command, "echo \"This is a test\"");
     strcpy(res->font, "serif");
-    res->fontsize = 12;
+    res->fontsize = 22;
     res->x = 0;
     res->y = 0;
     res->w = 1;
     res->h = 1;
     res->line_height = 1.25;
-    res->padding = 4;
+    res->padding = 0;
     res->refresh_rate = 1000;
     res->next = NULL;
     res->window = 0;
@@ -141,6 +141,7 @@ area_t *create_area(){
     c.y = 0;
     c.w = 0;
     c.h = 0;
+    c.type = 0;
     res->c = c;
     res->next = NULL;
     return res;
