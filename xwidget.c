@@ -60,6 +60,7 @@ void *initWidget(void* param){
         c.bg = w->bg;
         strcpy(c.action_l, "");
         strcpy(c.action_r, "");
+        c.type = 0;
         c.padding = 0;
         c.x = w->padding;
         c.y = w->padding;
@@ -236,10 +237,7 @@ void renderAreas(widget_t* w){
             int ih = cairo_image_surface_get_height(image);
             int ix = a->c.x + (a->c.w - iw) / 2;
             int iy = a->c.y + (a->c.h - ih) / 2;
-        
-            //cairo_clip (w->cr);
-            //cairo_new_path (w->cr);
-            
+                    
             cairo_set_source_surface(w->cr, image, ix, iy);
             cairo_rectangle(w->cr, ix, iy, iw, ih);
             cairo_fill(w->cr);
