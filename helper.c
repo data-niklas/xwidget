@@ -106,6 +106,7 @@ widget_t *create_widget(){
     res->fg = white_color;
     strcpy(res->command, "echo \"This is a test\"");
     strcpy(res->font, "serif");
+    strcpy(res->title, "xwidget");
     res->fontsize = 22;
     res->x = 0;
     res->y = 0;

@@ -329,6 +329,7 @@ void parseConfig(){
             else if (strcmp(start, "command") == 0)strcpy(current->command, value);
             else if (strcmp(start, "fontsize") == 0)current->fontsize = atoi(value);
             else if (strcmp(start, "font") == 0)strcpy(current->font, value);
+            else if (strcmp(start, "title") == 0)strcpy(current->title, value);
 
         }
     }
@@ -508,6 +509,17 @@ void createWindow(widget_t* w){
         visual->visual_id,
         value_mask, value_list);
  
+    xcb_intern_atom_cookie_t cookie;
+    xcb_intern_atom_reply_t *reply;
+
+    cookie = xcb_intern_atom(conn, 0, strlen("_NET_WM_NAME"), "_NET_WM_NAME");
+    if ((reply = xcb_intern_atom_reply(conn, cookie, NULL))) {
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, w->window, reply->atom, XCB_ATOM_STRING, 8, strlen(w->title), w->title);
+        free(reply);
+    }
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, w->window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(w->title), w->title);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, w->window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(WMCLASS), WMCLASS);
+
     xcb_map_window (conn, w->window);
     xcb_flush(conn);
 }

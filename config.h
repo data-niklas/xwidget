@@ -1,0 +1,1 @@
+char *WMCLASS = "xwidget";

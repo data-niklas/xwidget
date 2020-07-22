@@ -52,6 +52,7 @@ typedef struct widget_t {
     unsigned int padding;
     char command[128];
     char font[128];
+    char title[128];
     unsigned int fontsize;
     xcb_window_t window;
     area_t *areas;
