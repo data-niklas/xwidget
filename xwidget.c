@@ -47,10 +47,7 @@ void *initWidget(void* param){
 
         char buffer[1024];
         int start;
-        if (w->areas != NULL){
-            free_area(w->areas);
-            w->areas = NULL;
-        }
+        area_t *first = NULL;
         area_t *last = NULL;
         area_t *area = NULL;
         config_t c;
@@ -133,7 +130,7 @@ void *initWidget(void* param){
 
                 area->next = NULL;
                 if (last == NULL){
-                    w->areas = area;
+                    first = area;
                 }
                 else{
                     last->next = area;
@@ -203,6 +200,10 @@ void *initWidget(void* param){
         xcb_configure_window(conn, w->window, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, dimension);
         cairo_xcb_surface_set_size(w->surface, w->w, w->h);
         xcb_flush(conn);
+        if (w->areas != NULL){
+            free_area(w->areas);
+        }
+        w->areas = first;
         renderAreas(w);
         msleep(w->refresh_rate);
     }
