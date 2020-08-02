@@ -115,6 +115,8 @@ widget_t *create_widget(){
     res->line_height = 1.25;
     res->padding = 0;
     res->refresh_rate = 1000;
+    res->clickthrough = 0;
+    res->clicktoclose = 0;
     res->next = NULL;
     res->window = 0;
     res->areas = NULL;

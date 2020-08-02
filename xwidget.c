@@ -1,10 +1,13 @@
 #include <xcb/xcb.h>
 #include <xcb/xcb_util.h>
 #include <xcb/xcb_aux.h>
+#include <xcb/shape.h>
 
 #include <pthread.h>
 #include <cairo/cairo.h>
 #include <cairo/cairo-xcb.h>
+#include <cairo/cairo-ft.h>
+#include <fontconfig/fontconfig.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -210,13 +213,19 @@ void *initWidget(void* param){
     return NULL;
 }
 
+cairo_text_extents_t glyph_width(cairo_t *cr, cairo_glyph_t glyph){
+    cairo_text_extents_t ext;
+    cairo_glyph_extents(cr, &glyph, 1, &ext);
+    return ext;
+}
+
 
 //Render
 void renderAreas(widget_t* w){
     cairo_text_extents_t *ext = malloc(sizeof(cairo_text_extents_t));
 
     cairo_set_source_rgba(w->cr, w->bg.r / 255., w->bg.g / 255., w->bg.b / 255., w->bg.a / 255.);
-    cairo_paint (w->cr);
+    cairo_paint(w->cr);
     area_t *a = w->areas;
     while(a != NULL){
         cairo_set_source_rgba(w->cr, a->c.bg.r / 255., a->c.bg.g / 255., a->c.bg.b / 255., a->c.bg.a / 255.);
@@ -225,12 +234,37 @@ void renderAreas(widget_t* w){
     
         if (a->c.type == 0){
             cairo_set_source_rgba(w->cr, a->c.fg.r / 255, a->c.fg.g / 255, a->c.fg.b / 255, a->c.fg.a / 255);
+
+            /*
+                FcPattern *pattern = FcNameParse((FcChar8 *) a->c.font);
+                FcDefaultSubstitute(pattern);
+                cairo_font_face_t *font = cairo_ft_font_face_create_for_pattern(pattern);
+                cairo_font_face_destroy(cairo_get_font_face(w->cr));
+                cairo_set_font_face(w->cr, font);
+                FcPatternDestroy(pattern);
+
+            */
             cairo_select_font_face(w->cr, a->c.font, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
             cairo_set_font_size(w->cr, a->c.fontsize);
             cairo_text_extents(w->tcr, a->text, ext);
 
             cairo_move_to(w->cr, a->c.x + (a->c.w - ext->width) / 2, a->c.y + a->c.h - (a->c.h - ext->height) / 2);
             cairo_show_text(w->cr, a->text);
+
+            /*
+            int length = strlen(a->text);
+            cairo_glyph_t glyphs[length];
+            int x = a->c.x + (a->c.w - ext->width) / 2;
+            int y =  a->c.y + a->c.h - (a->c.h - ext->height) / 2;
+            cairo_text_extents_t ext;
+            for (int i = 0; i < length; i++){
+                glyphs[i] = (cairo_glyph_t) {a->text[i], x, y};
+                ext = glyph_width(w->cr, glyphs[i]);
+                x+=ext.width;
+            }
+            cairo_show_glyphs(w->cr, glyphs, length);
+            */
+
         }
         else if (a->c.type == 1){
             cairo_surface_t *image = cairo_image_surface_create_from_png(a->text);
@@ -325,6 +359,8 @@ void parseConfig(){
             else if (strcmp(start, "fg") == 0)current->fg = hextocolor(value);
             else if (strcmp(start, "refresh_rate") == 0)current->refresh_rate = strtoul(value,NULL,0);
             else if (strcmp(start, "line_height") == 0)current->line_height = atof(value);
+            else if (strcmp(start, "clickthrough") == 0)current->clickthrough = atoi(value);
+            else if (strcmp(start, "clicktoclose") == 0)current->clicktoclose = atoi(value);
             else if (strcmp(start, "padding") == 0)current->padding = atol(value);
             else if (strcmp(start, "command") == 0)strcpy(current->command, value);
             else if (strcmp(start, "fontsize") == 0)current->fontsize = atoi(value);
@@ -518,11 +554,23 @@ void createWindow(widget_t* w){
         free(reply);
     }
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, w->window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(w->title), w->title);
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, w->window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(WMCLASS), WMCLASS);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, w->window, XCB_ATOM_WM_CLASS, XCB_ATOM_STRING, 8, strlen(WMCLASS), WMCLASS);
+
+    xcb_rectangle_t rect;
+    rect.x = 0;
+    rect.y = 0;
+    rect.width = w->w;
+    rect.height = w->h;
+
+    if (w->clickthrough){
+        xcb_shape_rectangles(conn, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_INPUT, 0, w->window, 0, 0, 1, &rect);
+    }
+
 
     xcb_map_window (conn, w->window);
     xcb_flush(conn);
 }
+
 
 void *fifo(void* nothing){
     char h[32];
@@ -568,6 +616,8 @@ void widget_threads(){
 
 
 void init(){
+    FcInit();
+
     empty_color = create_color(0,0,0,0);
     black_color = create_color(0,0,0,0xFF);
     white_color = create_color(0xFF,0xFF,0xFF,0xFF);
@@ -620,15 +670,34 @@ int main(int argc, char *argv[]){
                 int y = ep->event_y;
                 widget_t* w = findWidget(ep->event);
                 area_t *area = w->areas;
+                int found = 0;
                 while (area != NULL){
                     if (x >= area->c.x && x <= area->c.x + area->c.w && y >= area->c.y && y <= area->c.y + area->c.h){
-                        if (ep->detail == 1 && strlen(area->c.action_l) > 0)system(area->c.action_l);
-                        else if (ep->detail == 2 && strlen(area->c.action_m) > 0)system(area->c.action_m);
-                        else if (ep->detail == 3 && strlen(area->c.action_r) > 0)system(area->c.action_r);
-                        else if (ep->detail == 4 && strlen(area->c.action_u) > 0)system(area->c.action_u);
-                        else if (ep->detail == 5 && strlen(area->c.action_d) > 0)system(area->c.action_d);
+                        if (ep->detail == 1 && strlen(area->c.action_l) > 0){
+                            system(area->c.action_l);
+                            found = 1;break;
+                        }
+                        else if (ep->detail == 2 && strlen(area->c.action_m) > 0){
+                            system(area->c.action_m);
+                            found = 1;break;
+                        }
+                        else if (ep->detail == 3 && strlen(area->c.action_r) > 0){
+                            system(area->c.action_r);
+                            found = 1;break;
+                        }
+                        else if (ep->detail == 4 && strlen(area->c.action_u) > 0){
+                            system(area->c.action_u);
+                            found = 1;break;
+                        }
+                        else if (ep->detail == 5 && strlen(area->c.action_d) > 0){
+                            system(area->c.action_d);
+                            found = 1;break;
+                        }
                     }
                     area = area->next;
+                }
+                if (!found && w->clicktoclose){
+                    exit(0);
                 }
                 break;
             }

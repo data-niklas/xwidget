@@ -1,10 +1,11 @@
 .POSIX:
 .SUFFIXES:
 CC     = gcc
-CFLAGS = -Wall
+LIBS = xcb xcb-shape cairo fontconfig
+CFLAGS = -Wall $(shell pkg-config --cflags $(LIBS))
 DEBUGFLAGS = -O0 -g -DDEBUG
-LDFLAGS = 
-LDLIBS = -lxcb -lcairo -lpthread
+LDFLAGS =
+LDLIBS = $(shell pkg-config --libs $(LIBS))-lpthread
 OFILES = xwidget.o helper.o
 
 all: xwidget

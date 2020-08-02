@@ -54,6 +54,8 @@ typedef struct widget_t {
     char font[128];
     char title[128];
     unsigned int fontsize;
+    unsigned int clickthrough;
+    unsigned int clicktoclose;
     xcb_window_t window;
     area_t *areas;
     pthread_t thread;
@@ -85,6 +87,7 @@ extern char fifo_path[64];
 extern int kill_threads;
 
 xcb_visualtype_t *get_visual ();
+cairo_text_extents_t glyph_width(cairo_t *cr, cairo_glyph_t glyphs);
 void createWindow(widget_t* widget);
 void *initWidget(void* widget);
 void renderAreas(widget_t* widget);

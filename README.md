@@ -53,6 +53,8 @@ simple xorg widgets
   - `padding` in pixel
   - `line_height`
   - `refresh_rate` in milliseconds
+  - `clickthrough` false: `0`, true: `1`
+  - `clicktoclose` false: `0`, true: `1` closes the xwidget instance
 - Colors can be defined as an argb or rgb hexcode, e.g.: `#000000` or `#FF000080`
 - Define the attributes of each widget in the following way:  `key = value`; the whitespace between the `=` is mandatory
 
